@@ -17,8 +17,8 @@ func New(input string) *Lexer {
 	return l
 }
 
-// readChar reads the next character from the input and advances the positions in the lexer.
-// If the end of the input is reached, it sets l.ch to 0 (indicating EOF).
+// readChar advances the lexer to the next character in the input.
+// Sets l.ch to 0 if the end of the input is reached (EOF).
 func (l *Lexer) readChar() {
 	if l.readPosition >= len(l.input) {
 		l.ch = 0
@@ -29,8 +29,7 @@ func (l *Lexer) readChar() {
 	l.readPosition += 1
 }
 
-// NextToken analyzes the current character and produces the next token.
-// It returns the token based on the current character and then advances the lexer.
+// NextToken retrieves the next token from the input and advances the lexer.
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -38,17 +37,41 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.ch {
 	case '=':
-		tok = newToken(token.ASSIGN, l.ch)
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = newTwoCharToken(token.EQ, ch, l.ch)
+		} else {
+			tok = newToken(token.ASSIGN, l.ch)
+		}
+	case '+':
+		tok = newToken(token.PLUS, l.ch)
+	case '-':
+		tok = newToken(token.MINUS, l.ch)
+	case '!':
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = newTwoCharToken(token.NOT_EQ, ch, l.ch)
+		} else {
+			tok = newToken(token.BANG, l.ch)
+		}
+	case '*':
+		tok = newToken(token.ASTERISK, l.ch)
+	case '/':
+		tok = newToken(token.SLASH, l.ch)
+	case '<':
+		tok = newToken(token.LT, l.ch)
+	case '>':
+		tok = newToken(token.GT, l.ch)
+	case ',':
+		tok = newToken(token.COMMA, l.ch)
 	case ';':
 		tok = newToken(token.SEMICOLON, l.ch)
 	case '(':
 		tok = newToken(token.LPAREN, l.ch)
 	case ')':
 		tok = newToken(token.RPAREN, l.ch)
-	case ',':
-		tok = newToken(token.COMMA, l.ch)
-	case '+':
-		tok = newToken(token.PLUS, l.ch)
 	case '{':
 		tok = newToken(token.LBRACE, l.ch)
 	case '}':
@@ -95,6 +118,14 @@ func (l *Lexer) skipWhitespace() {
 	}
 }
 
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPosition]
+	}
+}
+
 // readIdentifier reads an identifier (a sequence of letters or underscores) from the input.
 func (l *Lexer) readIdentifier() string {
 	position := l.position
@@ -111,5 +142,17 @@ func isLetter(ch byte) bool {
 
 // newToken creates a new token with the given type and literal value.
 func newToken(tokenType token.TokenType, ch byte) token.Token {
-	return token.Token{Type: tokenType, Literal: string(ch)}
+	return token.Token{
+		Type:    tokenType,
+		Literal: string(ch),
+	}
+}
+
+// newTwoCharToken creates a new token with the given type and a literal value
+// formed by concatenating two characters (ch1 and ch2).
+func newTwoCharToken(tokenType token.TokenType, ch1 byte, ch2 byte) token.Token {
+	return token.Token{
+		Type:    tokenType,
+		Literal: string(ch1) + string(ch2),
+	}
 }
